@@ -9,6 +9,7 @@ To run the application:
 Ensure you have Python installed on your system.
 
 Place all the files in the same directory.
+
 Run the login.py file.
 
 
