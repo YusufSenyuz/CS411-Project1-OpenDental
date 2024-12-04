@@ -3,80 +3,60 @@ from tkinter import *
 from tkinter import messagebox
 from two_factor_auth import open_2fa_page
 
-conn = sqlite3.connect('open_dental_users.db')
-c = conn.cursor()
+def attempt_login():
+    username = username_entry.get().strip()
+    password = password_entry.get().strip()
 
-c.execute('''CREATE TABLE IF NOT EXISTS users
-             (username TEXT, password TEXT, email TEXT, role TEXT)''')
-
-conn.commit()
-
-root = Tk()
-root.title("Login")
-root.geometry("550x370")
-root.configure(bg="#e0e0e0")
-root.resizable(False, False)
-
-def open_2fa(username, email):
-    root.destroy()
-    open_2fa_page(username, email)
-
-def check_login():
-    username = username_entry.get()
-    password = password_entry.get()
-    selected_role = role_filter.get()
-
-    c.execute("SELECT username FROM users WHERE role=?", (selected_role,))
-    expected_user = c.fetchone()
-
-    if expected_user and expected_user[0] != username:
-        messagebox.showerror("Error", "Role and username do not match.")
+    if not username or not password:
+        messagebox.showerror("Error", "Please fill in all fields.")
         return
 
-    c.execute("SELECT * FROM users WHERE username=? AND password=?", (username, password))
-    user = c.fetchone()
+    conn = sqlite3.connect('open_dental_users.db')
+    cursor = conn.cursor()
 
-    if user:
-        open_2fa(username, user[2])
-    else:
-        messagebox.showerror("Error", "Invalid username or password.")
+    try:
+        # Fetch user details from the database
+        cursor.execute("SELECT username, email, role FROM users WHERE username = ? AND password = ?", (username, password))
+        user_data = cursor.fetchone()
 
-def autofill_username(event):
-    role = role_filter.get()
+        if user_data:
+            user = {
+                'username': user_data[0],
+                'email': user_data[1],
+                'role': user_data[2],
+            }
+            messagebox.showinfo("Login Successful", f"Welcome, {user['username']}!")
+            login_window.destroy()  # Close the login window
+            open_2fa_page(user)  # Open the 2FA verification page
+        else:
+            messagebox.showerror("Login Failed", "Invalid username or password.")
+    except Exception as e:
+        messagebox.showerror("Database Error", f"An error occurred: {str(e)}")
+    finally:
+        conn.close()
 
-    c.execute("SELECT username FROM users WHERE role=?", (role,))
-    user = c.fetchone()
+# GUI for Login Page
+login_window = Tk()
+login_window.title("Hospital Management System - Login")
+login_window.geometry("400x300")
+login_window.configure(bg="#f0f0f0")
+login_window.resizable(False, False)
 
-    if user:
-        username_entry.delete(0, END)
-        username_entry.insert(0, user[0])
+# Title Label
+Label(login_window, text="Login", font=("Arial", 20, "bold"), bg="#f0f0f0").pack(pady=20)
 
-def get_roles():
-    c.execute("SELECT DISTINCT role FROM users")
-    roles = c.fetchall()
-    return [role[0] for role in roles]
+# Username Field
+Label(login_window, text="Username:", font=("Arial", 12), bg="#f0f0f0").pack(anchor=W, padx=50, pady=5)
+username_entry = Entry(login_window, width=30, font=("Arial", 12))
+username_entry.pack(pady=5)
 
-Label(root, text="Log On", font=("Arial", 20), bg="#e0e0e0", fg="black").place(x=80, y=30)
+# Password Field
+Label(login_window, text="Password:", font=("Arial", 12), bg="#f0f0f0").pack(anchor=W, padx=50, pady=5)
+password_entry = Entry(login_window, width=30, font=("Arial", 12), show="*")
+password_entry.pack(pady=5)
 
-Label(root, text="Select Role", bg="#e0e0e0", font=("Arial", 12)).place(x=80, y=100)
-role_filter = StringVar(root)
-role_filter.set("Select Role")
+# Login Button
+Button(login_window, text="Login", font=("Arial", 12), bg="#4CAF50", fg="white", width=15, command=attempt_login).pack(pady=20)
 
-user_roles = get_roles()
-
-role_menu = OptionMenu(root, role_filter, *user_roles, command=autofill_username)
-role_menu.place(x=180, y=100, width=150)
-
-Label(root, text="Username", bg="#e0e0e0", font=("Arial", 12)).place(x=80, y=160)
-username_entry = Entry(root, width=30)
-username_entry.place(x=180, y=160)
-
-Label(root, text="Password", bg="#e0e0e0", font=("Arial", 12)).place(x=80, y=220)
-password_entry = Entry(root, show="*", width=30)
-password_entry.place(x=180, y=220)
-
-Button(root, text="Login", command=check_login, width=15, bg="#4CAF50", fg="black", font=("Arial", 12)).place(x=250, y=270)
-
-root.mainloop()
-
-conn.close()
+# Run the Application
+login_window.mainloop()
