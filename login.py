@@ -16,14 +16,15 @@ def attempt_login():
 
     try:
         # Fetch user details from the database
-        cursor.execute("SELECT username, email, role FROM users WHERE username = ? AND password = ?", (username, password))
+        cursor.execute("SELECT uid, username, email, role FROM users WHERE username = ? AND password = ?", (username, password))
         user_data = cursor.fetchone()
 
         if user_data:
             user = {
-                'username': user_data[0],
-                'email': user_data[1],
-                'role': user_data[2],
+                'uid': user_data[0],
+                'username': user_data[1],
+                'email': user_data[2],
+                'role': user_data[3],
             }
             messagebox.showinfo("Login Successful", f"Welcome, {user['username']}!")
             login_window.destroy()  # Close the login window
@@ -56,7 +57,7 @@ password_entry = Entry(login_window, width=30, font=("Arial", 12), show="*")
 password_entry.pack(pady=5)
 
 # Login Button
-Button(login_window, text="Login", font=("Arial", 12), bg="#4CAF50", fg="white", width=15, command=attempt_login).pack(pady=20)
+Button(login_window, text="Login", font=("Arial", 12), bg="#4CAF50", fg="black", width=15, command=attempt_login).pack(pady=20)
 
 # Run the Application
 login_window.mainloop()

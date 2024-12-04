@@ -19,13 +19,13 @@ def send_2fa_code(user_email):
 
     msg = MIMEText(f"Your 2FA verification code is: {verification_code}")
     msg['Subject'] = 'Open Dental 2FA Verification'
-    msg['From'] = 'eylulbadem36@gmail.com'  # Update with your email
+    msg['From'] = 'eylulbadem36@gmail.com'  # Replace with your email
     msg['To'] = user_email
 
     try:
         with smtplib.SMTP('smtp.gmail.com', 587) as server:
             server.starttls()
-            server.login('eylulbadem36@gmail.com', 'lwlu togf bdrk vvzs')  # Update with your email credentials
+            server.login('eylulbadem36@gmail.com', 'lwlu togf bdrk vvzs')  # Replace with email credentials
             server.sendmail('eylulbadem36@gmail.com', user_email, msg.as_string())
             messagebox.showinfo("2FA Code", "A 2FA code has been sent to your email.")
     except Exception as e:
@@ -39,7 +39,7 @@ def check_2fa_code(user):
         twofa_window.destroy()
 
         # Redirect to the appropriate dashboard based on user role
-        user_role = user.get('role', 'Unknown')  # Default to 'Unknown' if role is missing
+        user_role = user.get('role', 'Unknown')
 
         if user_role == 'Personnel':
             personnel_dashboard(user)
