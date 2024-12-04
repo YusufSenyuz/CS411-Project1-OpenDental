@@ -5,7 +5,9 @@ from tkinter import *
 from tkinter import messagebox
 from email.mime.text import MIMEText
 import threading
-from dashboard import open_dashboard
+from patient_dashboard import open_dashboard
+from personnel_dashboard import open_dashboard
+from manager_dashboard import open_dashboard
 
 verification_code = ""
 countdown_time = 10
@@ -35,6 +37,7 @@ def check_2fa_code(username):
         messagebox.showinfo("Login Success", "2FA verification successful!")
         twofa_window.destroy()
         open_dashboard(username)
+
     else:
         messagebox.showerror("Error", "Invalid 2FA code.")
 

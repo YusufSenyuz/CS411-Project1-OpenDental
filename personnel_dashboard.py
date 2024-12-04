@@ -40,8 +40,9 @@ def open_dashboard(username):
     Label(left_frame, text="Quick Actions", bg="#D9EAD3", font=("Arial", 14)).pack(pady=10)
 
     Button(left_frame, text="Add Patient", font=("Arial", 12), width=15, bg="#6AA84F").pack(pady=5)
-    Button(left_frame, text="Schedule Appointment", font=("Arial", 12), width=15, bg="#6AA84F").pack(pady=5)
-    Button(left_frame, text="View Reports", font=("Arial", 12), width=15, bg="#6AA84F").pack(pady=5)
+    Button(left_frame, text="All Patients", font=("Arial", 12), width=15, bg="#6AA84F").pack(pady=5)
+    Button(left_frame, text="Doctors In My Hospital", font=("Arial", 12), width=15, bg="#6AA84F").pack(pady=5)
+    Button(left_frame, text="My Patients", font=("Arial", 12), width=15, bg="#6AA84F").pack(pady=5)
 
     Label(main_frame, text=f"Welcome to Open Dental, {username}", font=("Arial", 20), bg="#ffffff").pack(pady=20)
 

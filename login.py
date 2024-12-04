@@ -12,7 +12,7 @@ c.execute('''CREATE TABLE IF NOT EXISTS users
 conn.commit()
 
 root = Tk()
-root.title("Open Dental - Login")
+root.title("Login")
 root.geometry("550x370")
 root.configure(bg="#e0e0e0")
 root.resizable(False, False)
