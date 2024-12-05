@@ -31,22 +31,30 @@ def send_2fa_code(user_email):
     except Exception as e:
         messagebox.showerror("Email Error", f"Failed to send 2FA code. {str(e)}")
 
-def check_2fa_code(user):
-    entered_code = code_entry.get()
 
+def check_2fa_code(user):
+    print(f"Debug: User object before dashboard redirection: {user}")
+    if not isinstance(user, dict):
+        raise ValueError(f"Invalid user object: {user}")
+
+    entered_code = code_entry.get()
     if entered_code == verification_code:
         messagebox.showinfo("Login Success", "2FA verification successful!")
         twofa_window.destroy()
 
-        # Redirect to the appropriate dashboard based on user role
         user_role = user.get('role', 'Unknown')
+        print(f"Debug: Redirecting user to role-specific dashboard: {user_role}")
 
         if user_role == 'Personnel':
-            personnel_dashboard(user)
+            # Redirect personnel to their specific dashboard
+            from personnel_dashboard import personnel_dashboard
+            personnel_dashboard(user)  # Correct function call
         elif user_role == 'Patient':
-            patient_dashboard(user)
+            from patient_dashboard import open_dashboard
+            open_dashboard(user)  # Correct function call
         elif user_role == 'Manager':
-            manager_dashboard(user)
+            from manager_dashboard import open_dashboard
+            open_dashboard(user)  # Correct function call
         else:
             print("Unknown role. Contact admin.")
     else:
@@ -54,11 +62,15 @@ def check_2fa_code(user):
 
 def enable_resend_button():
     global countdown_time
-    while countdown_time > 0:
-        resend_button.config(text=f"Resend Code ({countdown_time}s)")
-        time.sleep(1)
-        countdown_time -= 1
-    resend_button.config(state=NORMAL, text="Resend Code")
+    try:
+        while countdown_time > 0:
+            resend_button.config(text=f"Resend Code ({countdown_time}s)")
+            time.sleep(1)
+            countdown_time -= 1
+        resend_button.config(state=NORMAL, text="Resend Code")
+    except TclError:
+        # Gracefully handle the case where the window or button is destroyed
+        print("Resend button was destroyed; thread exiting.")
 
 def open_2fa_page(user):
     global twofa_window, code_entry, resend_button
