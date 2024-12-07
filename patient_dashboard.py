@@ -46,6 +46,13 @@ def open_dashboard(user, parent=None):
     info_frame = Frame(dashboard, bg="white", padx=20, pady=10)
     info_frame.pack(pady=10, fill=X)
 
+    # Profile Picture Placeholder
+    profile_pic = PhotoImage(file="images/profile.png")  # Replace with actual patient image if available
+    profile_label = Label(info_frame, image=profile_pic, bg="white")
+    profile_label.image = profile_pic  # Prevent garbage collection
+    profile_label.pack(pady=10)
+
+
     Label(info_frame, text=f"Name: {patient_name}", font=("Arial", 14), bg="white").pack(anchor=W, pady=5)
     Label(info_frame, text=f"Age: {age}", font=("Arial", 14), bg="white").pack(anchor=W, pady=5)
     Label(info_frame, text=f"Gender: {gender}", font=("Arial", 14), bg="white").pack(anchor=W, pady=5)
