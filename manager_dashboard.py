@@ -1,52 +1,114 @@
+import sqlite3
 from tkinter import *
+from tkinter.ttk import Treeview
+from tkinter import messagebox
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-def open_dashboard(username):
+
+def open_dashboard(user):
+    print(f"Debug: Entering manager_dashboard with user: {user}")
+
+    if not isinstance(user, dict) or 'uid' not in user:
+        raise ValueError("Invalid user object passed to manager_dashboard.")
+
+    manager_uid = user['uid']
+    print(f"Debug: Manager UID is {manager_uid}")
+
+    # Hardcoded hospital details for single-hospital system
+    hospital_name = "Central Hospital"
+    hospital_address = "123 Main St, Cityville"
+
+    # Connect to the database
+    conn = sqlite3.connect('open_dental_users.db')
+    cursor = conn.cursor()
+
+    try:
+        # Fetch statistics
+        cursor.execute("SELECT COUNT(*) FROM patients")
+        total_patients = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM personnel WHERE role = 'Doctor'")
+        total_doctors = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM rooms")
+        total_rooms = cursor.fetchone()[0]
+
+        cursor.execute("SELECT gender, COUNT(*) FROM patients GROUP BY gender")
+        gender_distribution = cursor.fetchall()
+
+        cursor.execute("SELECT age, COUNT(*) FROM patients GROUP BY age")
+        age_distribution = cursor.fetchall()
+
+    except Exception as e:
+        print(f"Error fetching statistics data: {e}")
+        messagebox.showerror("Database Error", f"Error: {e}")
+        return
+    finally:
+        conn.close()
+
+    # Create the Manager Dashboard window
     dashboard = Tk()
-    dashboard.title(f"Open Dental - Dashboard ({username})")
-    dashboard.geometry("1000x600")
-    dashboard.configure(bg="#f0f0f0")
+    dashboard.title(f"{hospital_name} - Manager Dashboard")
+    dashboard.geometry("900x700")
+    dashboard.configure(bg="#f0f4f8")
 
-    menu_bar = Menu(dashboard)
+    # Header Section
+    header = Frame(dashboard, bg="#4CAF50", height=80)
+    header.pack(fill=X)
+    Label(header, text=f"Manager Dashboard - {hospital_name}", font=("Arial", 20), bg="#4CAF50", fg="white").pack()
 
-    file_menu = Menu(menu_bar, tearoff=0)
-    file_menu.add_command(label="New", command=None)
-    file_menu.add_command(label="Open", command=None)
-    file_menu.add_separator()
-    file_menu.add_command(label="Exit", command=dashboard.quit)
-    menu_bar.add_cascade(label="File", menu=file_menu)
+    # Hospital Info Section
+    info_frame = Frame(dashboard, bg="white", padx=10, pady=10, relief=RAISED, bd=2)
+    info_frame.pack(padx=10, pady=10, fill=X)
 
-    patients_menu = Menu(menu_bar, tearoff=0)
-    patients_menu.add_command(label="New Patient", command=None)
-    patients_menu.add_command(label="Search Patient", command=None)
-    menu_bar.add_cascade(label="Patients", menu=patients_menu)
+    Label(info_frame, text=f"Hospital Name: {hospital_name}", font=("Arial", 14)).pack(anchor=W)
+    Label(info_frame, text=f"Address: {hospital_address}", font=("Arial", 14)).pack(anchor=W)
 
-    appointments_menu = Menu(menu_bar, tearoff=0)
-    appointments_menu.add_command(label="Schedule Appointment", command=None)
-    appointments_menu.add_command(label="View Appointments", command=None)
-    menu_bar.add_cascade(label="Appointments", menu=appointments_menu)
+    # Buttons Section
+    menu_frame = Frame(dashboard, bg="white", padx=10, pady=10)
+    menu_frame.pack(fill=X, pady=10)
 
-    reports_menu = Menu(menu_bar, tearoff=0)
-    reports_menu.add_command(label="Generate Report", command=None)
-    menu_bar.add_cascade(label="Reports", menu=reports_menu)
+    Button(menu_frame, text="All Doctors", font=("Arial", 12), bg="#6AA84F", command=lambda: print("All Doctors clicked")).pack(side=LEFT, padx=10)
+    Button(menu_frame, text="All Patients", font=("Arial", 12), bg="#6AA84F", command=lambda: print("All Patients clicked")).pack(side=LEFT, padx=10)
+    Button(menu_frame, text="All Rooms", font=("Arial", 12), bg="#6AA84F", command=lambda: print("All Rooms clicked")).pack(side=LEFT, padx=10)
 
-    dashboard.config(menu=menu_bar)
+    # Visual Statistics Section
+    stats_frame = Frame(dashboard, bg="white", padx=10, pady=10)
+    stats_frame.pack(fill=BOTH, expand=True)
 
-    left_frame = Frame(dashboard, bg="#D9EAD3", width=200, height=600, relief=RAISED, bd=2)
-    left_frame.pack(side=LEFT, fill=Y)
+    Label(stats_frame, text="Hospital Statistics", font=("Arial", 16)).pack()
 
-    main_frame = Frame(dashboard, bg="#ffffff", relief=RAISED, bd=2)
-    main_frame.pack(fill=BOTH, expand=True)
+    # Create Visualizations using Matplotlib
+    fig, axs = plt.subplots(2, 1, figsize=(6, 8), dpi=100)
+    fig.subplots_adjust(hspace=0.5)
 
-    Label(left_frame, text="Quick Actions", bg="#D9EAD3", font=("Arial", 14)).pack(pady=10)
+    # Gender Distribution Pie Chart
+    if gender_distribution:
+        genders, counts = zip(*gender_distribution)
+        axs[0].pie(counts, labels=genders, autopct='%1.1f%%', startangle=140, colors=['skyblue', 'lightcoral'])
+        axs[0].set_title("Gender Distribution of Patients")
+    else:
+        axs[0].text(0.5, 0.5, "No Data", ha='center', va='center', fontsize=14)
 
+    # Age Distribution Bar Chart
+    if age_distribution:
+        ages, age_counts = zip(*age_distribution)
+        axs[1].bar(ages, age_counts, color='orange')
+        axs[1].set_title("Age Distribution of Patients")
+        axs[1].set_xlabel("Age")
+        axs[1].set_ylabel("Number of Patients")
+    else:
+        axs[1].text(0.5, 0.5, "No Data", ha='center', va='center', fontsize=14)
 
-    Button(left_frame, text="Patients Registered To My Hospital", font=("Arial", 12), width=15, bg="#6AA84F").pack(pady=5)
-    Button(left_frame, text="Doctors In My Hospital", font=("Arial", 12), width=15, bg="#6AA84F").pack(pady=5)
-    Button(left_frame, text="All Rooms", font=("Arial", 12), width=15, bg="#6AA84F").pack(pady=5)
+    # Embed Matplotlib figure in Tkinter
+    canvas = FigureCanvasTkAgg(fig, master=stats_frame)
+    canvas.draw()
+    canvas.get_tk_widget().pack(fill=BOTH, expand=True)
 
-    Label(main_frame, text=f"Welcome to Open Dental, {username}", font=("Arial", 20), bg="#ffffff").pack(pady=20)
-
-    status_label = Label(main_frame, text=f"Status: Logged in as {username}", font=("Arial", 12), bg="#ffffff")
-    status_label.pack(pady=5)
+    # Footer Section
+    footer = Frame(dashboard, bg="#f0f4f8", height=50)
+    footer.pack(fill=X, side=BOTTOM, pady=10)
+    Button(footer, text="Log Out", font=("Arial", 12), bg="#dc3545", fg="black", width=15, command=dashboard.destroy).pack(pady=10)
 
     dashboard.mainloop()
