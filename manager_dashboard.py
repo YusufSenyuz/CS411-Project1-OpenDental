@@ -1,4 +1,5 @@
 import sqlite3
+import subprocess
 from tkinter import *
 from tkinter.ttk import Treeview
 from tkinter import messagebox
@@ -53,36 +54,51 @@ def open_dashboard(user):
     dashboard.geometry("900x700")
     dashboard.configure(bg="#f0f4f8")
 
+    # Define a function to switch pages
+    def show_page(page_name):
+        for frame in pages.values():
+            frame.pack_forget()
+        pages[page_name].pack(fill=BOTH, expand=True)
+
+        # Define a function to open floors_rooms.py
+    def open_floors_rooms():
+        try:
+            subprocess.Popen(["python", "floors_rooms.py"])
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not open floors_rooms.py: {e}")
+
     # Header Section
     header = Frame(dashboard, bg="#4CAF50", height=80)
     header.pack(fill=X)
     Label(header, text=f"Manager Dashboard - {hospital_name}", font=("Arial", 20), bg="#4CAF50", fg="white").pack()
 
     # Hospital Info Section
-    info_frame = Frame(dashboard, bg="white", padx=10, pady=10, relief=RAISED, bd=2)
-    info_frame.pack(padx=10, pady=10, fill=X)
-
-    Label(info_frame, text=f"Hospital Name: {hospital_name}", font=("Arial", 14)).pack(anchor=W)
-    Label(info_frame, text=f"Address: {hospital_address}", font=("Arial", 14)).pack(anchor=W)
-
     # Buttons Section
     menu_frame = Frame(dashboard, bg="white", padx=10, pady=10)
     menu_frame.pack(fill=X, pady=10)
 
-    Button(menu_frame, text="All Doctors", font=("Arial", 12), bg="#6AA84F", command=lambda: print("All Doctors clicked")).pack(side=LEFT, padx=10)
-    Button(menu_frame, text="All Patients", font=("Arial", 12), bg="#6AA84F", command=lambda: print("All Patients clicked")).pack(side=LEFT, padx=10)
-    Button(menu_frame, text="All Rooms", font=("Arial", 12), bg="#6AA84F", command=lambda: print("All Rooms clicked")).pack(side=LEFT, padx=10)
+    Button(menu_frame, text="Home", font=("Arial", 12), bg="#4CAF50", command=lambda: show_page("Home")).pack(side=LEFT,
+                                                                                                              padx=10)
+    Button(menu_frame, text="All Doctors", font=("Arial", 12), bg="#6AA84F", command=lambda: show_page("Doctors")).pack(
+        side=LEFT, padx=10)
+    Button(menu_frame, text="All Patients", font=("Arial", 12), bg="#6AA84F",
+           command=lambda: show_page("Patients")).pack(side=LEFT, padx=10)
+    Button(menu_frame, text="All Rooms", font=("Arial", 12), bg="#6AA84F", command=open_floors_rooms).pack(
+        side=LEFT, padx=10)
 
-    # Visual Statistics Section
-    stats_frame = Frame(dashboard, bg="white", padx=10, pady=10)
-    stats_frame.pack(fill=BOTH, expand=True)
+    # Page Frames
+    pages = {}
 
-    Label(stats_frame, text="Hospital Statistics", font=("Arial", 16)).pack()
+    # Home Page
+    home_page = Frame(dashboard, bg="white", padx=10, pady=10)
+    pages["Home"] = home_page
+    home_page.pack(fill=BOTH, expand=True)
+
+    Label(home_page, text="Hospital Statistics", font=("Arial", 16)).pack()
 
     # Create Visualizations using Matplotlib
     fig, axs = plt.subplots(2, 1, figsize=(6, 8), dpi=100)
     fig.subplots_adjust(hspace=0.5)
-
     # Gender Distribution Pie Chart
     if gender_distribution:
         genders, counts = zip(*gender_distribution)
@@ -102,13 +118,23 @@ def open_dashboard(user):
         axs[1].text(0.5, 0.5, "No Data", ha='center', va='center', fontsize=14)
 
     # Embed Matplotlib figure in Tkinter
-    canvas = FigureCanvasTkAgg(fig, master=stats_frame)
+    canvas = FigureCanvasTkAgg(fig, master=home_page)
     canvas.draw()
     canvas.get_tk_widget().pack(fill=BOTH, expand=True)
+
+    # Foo Pages (Doctors, Patients, Rooms)
+    for name in ["Doctors", "Patients", "Rooms"]:
+        page = Frame(dashboard, bg="white", padx=10, pady=10)
+        pages[name] = page
+        Label(page, text=f"{name} Page (Placeholder)", font=("Arial", 16)).pack()
+
+    # Show Home Page by default
+    show_page("Home")
 
     # Footer Section
     footer = Frame(dashboard, bg="#f0f4f8", height=50)
     footer.pack(fill=X, side=BOTTOM, pady=10)
-    Button(footer, text="Log Out", font=("Arial", 12), bg="#dc3545", fg="black", width=15, command=dashboard.destroy).pack(pady=10)
+    Button(footer, text="Log Out", font=("Arial", 12), bg="#dc3545", fg="black", width=15,
+           command=dashboard.destroy).pack(pady=10)
 
     dashboard.mainloop()
