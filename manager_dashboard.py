@@ -1,7 +1,7 @@
 import sqlite3
 import subprocess
 from tkinter import *
-from tkinter.ttk import Treeview
+from tkinter.ttk import Treeview, Style
 from tkinter import messagebox
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -54,11 +54,18 @@ def open_dashboard(user):
     dashboard.geometry("900x700")
     dashboard.configure(bg="#f0f4f8")
 
+
     # Define a function to switch pages
     def show_page(page_name):
         for frame in pages.values():
             frame.pack_forget()
         pages[page_name].pack(fill=BOTH, expand=True)
+
+    def open_login_page():
+        try:
+            subprocess.Popen(["python", "login.py"])
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not open login.py: {e}")
 
         # Define a function to open floors_rooms.py
     def open_floors_rooms():
@@ -76,8 +83,8 @@ def open_dashboard(user):
     # Buttons Section
     menu_frame = Frame(dashboard, bg="white", padx=10, pady=10)
     menu_frame.pack(fill=X, pady=10)
-
     # implement the show all doctors button
+    # GUI for All Doctors
     def show_all_doctors():
         """Function to display all doctors."""
         conn = sqlite3.connect('open_dental_users.db')
@@ -93,7 +100,7 @@ def open_dashboard(user):
             print(f"Debug: Found doctors: {doctors}")
         except Exception as e:
             print(f"Error fetching doctors: {e}")
-            messagebox.showerror("Database Error", f"Error: {e}")
+            messagebox.showearor("Database Error", f"Error: {e}")
             return
         finally:
             conn.close()
@@ -102,27 +109,62 @@ def open_dashboard(user):
         doctors_window = Toplevel()
         doctors_window.title("All Doctors")
         doctors_window.geometry("800x600")
+        doctors_window.configure(bg="#e9f5e9")
 
-        Label(doctors_window, text="All Doctors", font=("Arial", 16)).pack(pady=10)
+        Label(doctors_window, text="All Doctors", font=("Arial", 20, "bold"), bg="#e9f5e9", fg="#4CAF50").pack(pady=10)
 
+        # Treeview for displaying doctors
         tree = Treeview(
             doctors_window,
             columns=("ID", "Name", "Email", "Age"),
             show="headings",
             height=15
         )
-        tree.pack(fill=BOTH, expand=True)
+        tree.pack(fill=BOTH, expand=True, pady=10)
 
+        # Configure styles
+        style = Style()
+        style.theme_use("clam")
+        style.configure("Treeview",
+                        background="#F9F9F9",
+                        foreground="black",
+                        rowheight=25,
+                        fieldbackground="#F9F9F9")
+        style.map('Treeview',
+                  background=[('selected', '#0078D4')],
+                  foreground=[('selected', 'white')])
+
+        style.configure("Treeview.Heading",
+                        font=("Helvetica", 10, "bold"),
+                        background="#4CAF50",
+                        foreground="white")
+
+        style.configure("TLabelFrame",
+                        background="#F3F3F3",
+                        font=("Helvetica", 10, "bold"))
+
+        style.configure("TButton",
+                        font=("Helvetica", 10),
+                        padding=5)
         tree.heading("ID", text="ID")
         tree.heading("Name", text="Name")
         tree.heading("Email", text="Email")
         tree.heading("Age", text="Age")
 
-        # Populate the table
-        for doctor in doctors:
-            tree.insert("", END, values=doctor)
+        tree.tag_configure("oddrow", background="#f0f8ff")
+        tree.tag_configure("evenrow", background="#e6e6fa")
 
-    # implement the show all patients button
+        # Populate the table
+        for index, doctor in enumerate(doctors):
+            tag = "oddrow" if index % 2 == 0 else "evenrow"
+            tree.insert("", END, values=doctor, tags=(tag,))
+
+        # Scrollbar for Treeview
+        scrollbar = Scrollbar(doctors_window, orient=VERTICAL, command=tree.yview)
+        tree.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side=RIGHT, fill=Y)
+
+    # GUI for All Patients
     def show_all_patients():
         """Function to display all patients."""
         conn = sqlite3.connect('open_dental_users.db')
@@ -146,16 +188,19 @@ def open_dashboard(user):
         patients_window = Toplevel()
         patients_window.title("All Patients")
         patients_window.geometry("800x600")
+        patients_window.configure(bg="#f9f9f9")
 
-        Label(patients_window, text="All Patients", font=("Arial", 16)).pack(pady=10)
+        Label(patients_window, text="All Patients", font=("Arial", 20, "bold"), bg="#f9f9f9", fg="#4CAF50").pack(
+            pady=10)
 
+        # Treeview for displaying patients
         tree = Treeview(
             patients_window,
             columns=("ID", "Name", "Age", "Assigned Doctor", "Room Number"),
             show="headings",
             height=15
         )
-        tree.pack(fill=BOTH, expand=True)
+        tree.pack(fill=BOTH, expand=True, pady=10)
 
         tree.heading("ID", text="ID")
         tree.heading("Name", text="Name")
@@ -163,14 +208,22 @@ def open_dashboard(user):
         tree.heading("Assigned Doctor", text="Assigned Doctor")
         tree.heading("Room Number", text="Room Number")
 
+        tree.tag_configure("oddrow", background="#f0f8ff")
+        tree.tag_configure("evenrow", background="#e6e6fa")
+
         # Populate the table
-        # Additional if check is for the case that patient does not have a room number assigned
-        for patient in patients:
-            # Replace `None` with a placeholder if `Room Number` is NULL
+        for index, patient in enumerate(patients):
             patient = list(patient)  # Convert to list to allow modification
             if patient[4] is None:  # Room Number is at index 4
                 patient[4] = "Not Assigned"
-            tree.insert("", END, values=patient)
+            tag = "oddrow" if index % 2 == 0 else "evenrow"
+            tree.insert("", END, values=patient, tags=(tag,))
+
+        # Scrollbar for Treeview
+        scrollbar = Scrollbar(patients_window, orient=VERTICAL, command=tree.yview)
+        tree.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side=RIGHT, fill=Y)
+
 
     # Update Buttons in the personnel_dashboard function
     Button(menu_frame, text="Home", font=("Arial", 12), bg="#4CAF50", command=lambda: show_page("Home")).pack(side=LEFT,
@@ -229,10 +282,15 @@ def open_dashboard(user):
     # Show Home Page by default
     show_page("Home")
 
+    def terminate_session():
+        """Terminate the session and show the login page."""
+        dashboard.withdraw()  # Hide the current window
+        open_login_page()  # Open the login page
+
     # Footer Section
     footer = Frame(dashboard, bg="#f0f4f8", height=50)
     footer.pack(fill=X, side=BOTTOM, pady=10)
     Button(footer, text="Log Out", font=("Arial", 12), bg="#dc3545", fg="black", width=15,
-           command=dashboard.destroy).pack(pady=10)
+           command=terminate_session).pack(pady=10)
 
     dashboard.mainloop()

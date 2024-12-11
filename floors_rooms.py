@@ -48,6 +48,30 @@ class HIMSApp:
 
         self.selected_patient = None
         self.selected_room = None
+        # Configure styles
+        style = ttk.Style()
+        style.theme_use("clam")
+        style.configure("Treeview",
+                        background="#F9F9F9",
+                        foreground="black",
+                        rowheight=25,
+                        fieldbackground="#F9F9F9")
+        style.map('Treeview',
+                  background=[('selected', '#0078D4')],
+                  foreground=[('selected', 'white')])
+
+        style.configure("Treeview.Heading",
+                        font=("Helvetica", 10, "bold"),
+                        background="#4CAF50",
+                        foreground="white")
+
+        style.configure("TLabelFrame",
+                        background="#F3F3F3",
+                        font=("Helvetica", 10, "bold"))
+
+        style.configure("TButton",
+                        font=("Helvetica", 10),
+                        padding=5)
 
         # Frame for patient management
         patient_frame = ttk.LabelFrame(root, text="Patient Management")
@@ -113,8 +137,14 @@ class HIMSApp:
             LEFT JOIN assignments ON users.uid = assignments.patient_id
             LEFT JOIN rooms ON assignments.room_id = rooms.id
         ''').fetchall()
-        for patient in patients:
-            self.patient_list.insert("", "end", values=patient)
+        # Insert data with alternating row colors
+        for index, patient in enumerate(patients):
+            tag = 'oddrow' if index % 2 == 0 else 'evenrow'
+            self.patient_list.insert("", "end", values=patient, tags=(tag,))
+
+        # Configure row styles
+        self.patient_list.tag_configure('oddrow', background="#f0f8ff")
+        self.patient_list.tag_configure('evenrow', background="#e6e6fa")
 
     def load_floors(self):
         floors = cursor.execute("SELECT DISTINCT floor FROM rooms").fetchall()
@@ -126,8 +156,14 @@ class HIMSApp:
         selected_floor = self.floor_var.get()
         rooms = cursor.execute("SELECT id, room_number, beds, available_beds FROM rooms WHERE floor = ?",
                                (selected_floor,)).fetchall()
-        for room in rooms:
-            self.room_list.insert("", "end", values=room)
+        # Insert data with alternating row colors
+        for index, room in enumerate(rooms):
+            tag = 'oddrow' if index % 2 == 0 else 'evenrow'
+            self.room_list.insert("", "end", values=room, tags=(tag,))
+
+        # Configure row styles
+        self.room_list.tag_configure('oddrow', background="#f0f8ff")
+        self.room_list.tag_configure('evenrow', background="#e6e6fa")
 
     def select_patient(self, event):
         selected = self.patient_list.selection()
