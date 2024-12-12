@@ -57,7 +57,7 @@ def open_dashboard(user, parent=None):
 
     def open_login_page():
         try:
-            subprocess.Popen(["python", "login.py"])
+            subprocess.Popen(["python3", "login.py"])
         except Exception as e:
             messagebox.showerror("Error", f"Could not open login.py: {e}")
     def terminate_session():

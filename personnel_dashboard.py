@@ -1,4 +1,5 @@
 import sqlite3
+import time
 from tkinter import *
 from tkinter.ttk import Treeview, Style
 import subprocess
@@ -7,7 +8,6 @@ from tkinter import ttk, messagebox
 from PIL._tkinter_finder import tk
 
 from patient_dashboard import open_dashboard
-
 
 def personnel_dashboard(user):
     print(f"Debug: Entering personnel_dashboard with user: {user}")
@@ -238,6 +238,7 @@ def personnel_dashboard(user):
             messagebox.showerror("Input Error", "Age must be a number!")
             return
 
+        start_time = time.time()
 
         # Insert data into the database
         try:
@@ -249,6 +250,9 @@ def personnel_dashboard(user):
             """, (name, int(age), gender, race, education_level, email, doctor_assigned))
             conn.commit()
             messagebox.showinfo("Success", "Patient added successfully!")
+
+            duration = time.time() - start_time
+            print(f"Time taken to register patient to database: {duration:.2f} seconds")
             add_patient_window.destroy()  # Close the Add Patient window after submission
         except Exception as e:
             messagebox.showerror("Database Error", f"Error adding patient: {e}")
@@ -299,7 +303,7 @@ def personnel_dashboard(user):
         doctor_combobox.pack(pady=5)
 
         # Submit button with styles
-        Button(add_patient_window, text="Submit", command=submit_patient, bg="#6AA84F", fg="white",
+        Button(add_patient_window, text="Submit", command=submit_patient, bg="#6AA84F", fg="black",
                font=("Arial", 12, "bold")).pack(pady=20)
 
     # Update Buttons in the personnel_dashboard function
@@ -333,7 +337,7 @@ def personnel_dashboard(user):
 
     def open_login_page():
         try:
-            subprocess.Popen(["python", "login.py"])
+            subprocess.Popen(["python3", "login.py"])
         except Exception as e:
             messagebox.showerror("Error", f"Could not open login.py: {e}")
     # Add double-click functionality to open patient dashboard
@@ -348,7 +352,7 @@ def personnel_dashboard(user):
 
     def terminate_session():
         """Terminate the session and show the login page."""
-        dashboard.withdraw()  # Hide the current window
+        dashboard.destroy()  # Hide the current window
         open_login_page()  # Open the login page
 
     # Log Out Button

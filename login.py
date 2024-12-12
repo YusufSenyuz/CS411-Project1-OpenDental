@@ -1,4 +1,5 @@
 import sqlite3
+import time
 from tkinter import *
 from tkinter import messagebox
 from two_factor_auth import open_2fa_page
@@ -6,6 +7,7 @@ from two_factor_auth import open_2fa_page
 def attempt_login():
     username = username_entry.get().strip()
     password = password_entry.get().strip()
+    start_time = time.time()
 
     if not username or not password:
         messagebox.showerror("Error", "Please fill in all fields.")
@@ -28,7 +30,9 @@ def attempt_login():
             }
             messagebox.showinfo("Login Successful", f"Welcome, {user['username']}!")
             login_window.destroy()  # Close the login window
+            duration = time.time() - start_time
             open_2fa_page(user)  # Open the 2FA verification page
+            print(f"Time taken to open 2FA page: {duration:.2f} seconds")
         else:
             messagebox.showerror("Login Failed", "Invalid username or password.")
     except Exception as e:

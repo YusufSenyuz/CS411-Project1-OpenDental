@@ -69,14 +69,14 @@ def open_dashboard(user):
 
     def open_login_page():
         try:
-            subprocess.Popen(["python", "login.py"])
+            subprocess.Popen(["python3", "login.py"])
         except Exception as e:
             messagebox.showerror("Error", f"Could not open login.py: {e}")
 
         # Define a function to open floors_rooms.py
     def open_floors_rooms():
         try:
-            subprocess.Popen(["python", "floors_rooms.py"])
+            subprocess.Popen(["python3", "floors_rooms.py"])
         except Exception as e:
             messagebox.showerror("Error", f"Could not open floors_rooms.py: {e}")
 
