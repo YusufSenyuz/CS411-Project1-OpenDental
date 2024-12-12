@@ -1,9 +1,10 @@
 import sqlite3
 from tkinter import *
 from tkinter.ttk import Treeview, Style
-from tkinter import messagebox
 import subprocess
-
+import tkinter as tk
+from tkinter import ttk, messagebox
+from PIL._tkinter_finder import tk
 
 from patient_dashboard import open_dashboard
 
@@ -164,6 +165,7 @@ def personnel_dashboard(user):
         cursor = conn.cursor()
 
         try:
+
             cursor.execute("""
                    SELECT p.pid, p.name, p.age, p.assigned_doctor, p.room_number
                    FROM patients p
@@ -217,11 +219,93 @@ def personnel_dashboard(user):
         tree.configure(yscrollcommand=scrollbar.set)
         scrollbar.pack(side=RIGHT, fill=Y)
 
+    # Function to submit patient information
+    def submit_patient():
+        # Get data from input fields
+        name = name_entry.get().strip()
+        age = age_entry.get().strip()
+        gender = gender_combobox.get()
+        race = race_combobox.get()
+        education_level = education_combobox.get()
+        email = email_entry.get().strip()
+        doctor_assigned = doctor_combobox.get()
+
+        # Validate input
+        if not name or not age or not email or not gender or not race or not education_level or not doctor_assigned:
+            messagebox.showerror("Input Error", "All fields must be filled!")
+            return
+        if not age.isdigit():
+            messagebox.showerror("Input Error", "Age must be a number!")
+            return
+
+
+        # Insert data into the database
+        try:
+            conn = sqlite3.connect('open_dental_users.db')
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO patients (name, age, gender, race, education_level, email, assigned_doctor)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (name, int(age), gender, race, education_level, email, doctor_assigned))
+            conn.commit()
+            messagebox.showinfo("Success", "Patient added successfully!")
+            add_patient_window.destroy()  # Close the Add Patient window after submission
+        except Exception as e:
+            messagebox.showerror("Database Error", f"Error adding patient: {e}")
+
+    # Function to open the Add Patient form
+    def open_add_patient_form():
+        global add_patient_window, name_entry, age_entry, gender_combobox, race_combobox, education_combobox, email_entry, doctor_combobox
+
+        # Create a new window
+        add_patient_window = Toplevel()
+        add_patient_window.title("Add Patient")
+        add_patient_window.geometry("400x500")
+
+        # Create input fields and labels with enhanced styles
+        Label(add_patient_window, text="Name:", font=("Arial", 12), bg="#e9f5e9", fg="#4CAF50").pack(pady=5)
+        name_entry = Entry(add_patient_window)
+        name_entry.pack(pady=5)
+
+        Label(add_patient_window, text="Age:", font=("Arial", 12), bg="#e9f5e9", fg="#4CAF50").pack(pady=5)
+        age_entry = Entry(add_patient_window)
+        age_entry.pack(pady=5)
+
+        Label(add_patient_window, text="Gender:", font=("Arial", 12), bg="#e9f5e9", fg="#4CAF50").pack(pady=5)
+        gender_combobox = ttk.Combobox(add_patient_window, values=["Male", "Female", "Other"], state="readonly")
+        gender_combobox.pack(pady=5)
+
+        Label(add_patient_window, text="Race:", font=("Arial", 12), bg="#e9f5e9", fg="#4CAF50").pack(pady=5)
+        race_combobox = ttk.Combobox(add_patient_window, values=["Asian", "Black", "White", "Hispanic", "Other"],
+                                     state="readonly")
+        race_combobox.pack(pady=5)
+
+        Label(add_patient_window, text="Education Level:", font=("Arial", 12), bg="#e9f5e9", fg="#4CAF50").pack(pady=5)
+        education_combobox = ttk.Combobox(add_patient_window,
+                                          values=["High School", "Bachelor's", "Master's", "PhD", "Other"],
+                                          state="readonly")
+        education_combobox.pack(pady=5)
+
+        Label(add_patient_window, text="Email:", font=("Arial", 12), bg="#e9f5e9", fg="#4CAF50").pack(pady=5)
+        email_entry = Entry(add_patient_window)
+        email_entry.pack(pady=5)
+
+        Label(add_patient_window, text="Assigned Doctor:", font=("Arial", 12), bg="#e9f5e9", fg="#4CAF50").pack(pady=5)
+        conn = sqlite3.connect('open_dental_users.db')
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM personnel WHERE role = 'Doctor'")
+        doctor_names = [row[0] for row in cursor.fetchall()]
+        doctor_combobox = ttk.Combobox(add_patient_window, values=doctor_names, state="readonly")
+        doctor_combobox.pack(pady=5)
+
+        # Submit button with styles
+        Button(add_patient_window, text="Submit", command=submit_patient, bg="#6AA84F", fg="white",
+               font=("Arial", 12, "bold")).pack(pady=20)
 
     # Update Buttons in the personnel_dashboard function
     Button(menu_frame, text="All Doctors", font=("Arial", 12), bg="#6AA84F", command=show_all_doctors).pack(side=LEFT, padx=10)
     Button(menu_frame, text="All Patients", font=("Arial", 12), bg="#6AA84F", command=show_all_patients).pack(side=LEFT, padx=10)
-    Button(menu_frame, text="Add Patient", font=("Arial", 12), bg="#6AA84F", command=lambda: print("Add Patient clicked")).pack(side=LEFT, padx=10)
+    Button(menu_frame, text="Add Patient", font=("Arial", 12), bg="#6AA84F", command=open_add_patient_form).pack(side=LEFT, padx=10)
 
     # Patient Table Section
     table_frame = Frame(dashboard, bg="white")

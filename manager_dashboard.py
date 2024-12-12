@@ -41,6 +41,12 @@ def open_dashboard(user):
         cursor.execute("SELECT age, COUNT(*) FROM patients GROUP BY age")
         age_distribution = cursor.fetchall()
 
+        cursor.execute("SELECT race, COUNT(*) FROM patients GROUP BY race")
+        race_distribution = cursor.fetchall()
+
+        cursor.execute("SELECT education_level, COUNT(*) FROM patients GROUP BY education_level")
+        education_level_distribution = cursor.fetchall()
+
     except Exception as e:
         print(f"Error fetching statistics data: {e}")
         messagebox.showerror("Database Error", f"Error: {e}")
@@ -377,7 +383,7 @@ def open_dashboard(user):
     Label(home_page, text="Hospital Statistics", font=("Arial", 16)).pack()
 
     # Create Visualizations using Matplotlib
-    fig, axs = plt.subplots(2, 1, figsize=(6, 8), dpi=100)
+    fig, axs = plt.subplots(4, 1, figsize=(6, 8), dpi=100)
     fig.subplots_adjust(hspace=0.5)
     # Gender Distribution Pie Chart
     if gender_distribution:
@@ -386,16 +392,32 @@ def open_dashboard(user):
         axs[0].set_title("Gender Distribution of Patients")
     else:
         axs[0].text(0.5, 0.5, "No Data", ha='center', va='center', fontsize=14)
+    # Race Distribution Pie Chart
+    if race_distribution:
+        races, counts = zip(*race_distribution)
+        axs[1].pie(counts, labels=races, autopct='%1.1f%%', startangle=140,
+                   colors=['gold', 'green', 'purple', 'orange', 'pink'])
+        axs[1].set_title("Race Distribution of Patients")
+    else:
+        axs[1].text(0.5, 0.5, "No Data", ha='center', va='center', fontsize=14)
 
+    # Education Level Distribution Pie Chart
+    if education_level_distribution:
+        education_levels, counts = zip(*education_level_distribution)
+        axs[2].pie(counts, labels=education_levels, autopct='%1.1f%%', startangle=140,
+                   colors=['brown', 'cyan', 'lime', 'magenta', 'grey'])
+        axs[2].set_title("Education Level Distribution of Patients")
+    else:
+        axs[2].text(0.5, 0.5, "No Data", ha='center', va='center', fontsize=14)
     # Age Distribution Bar Chart
     if age_distribution:
         ages, age_counts = zip(*age_distribution)
-        axs[1].bar(ages, age_counts, color='orange')
-        axs[1].set_title("Age Distribution of Patients")
-        axs[1].set_xlabel("Age")
-        axs[1].set_ylabel("Number of Patients")
+        axs[3].bar(ages, age_counts, color='orange')
+        axs[3].set_title("Age Distribution of Patients")
+        axs[3].set_xlabel("Age")
+        axs[3].set_ylabel("Number of Patients")
     else:
-        axs[1].text(0.5, 0.5, "No Data", ha='center', va='center', fontsize=14)
+        axs[3].text(0.5, 0.5, "No Data", ha='center', va='center', fontsize=14)
 
     # Embed Matplotlib figure in Tkinter
     canvas = FigureCanvasTkAgg(fig, master=home_page)
