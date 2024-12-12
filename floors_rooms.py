@@ -7,8 +7,6 @@ conn = sqlite3.connect('open_dental_users.db')
 cursor = conn.cursor()
 
 # Tables
-#cursor.execute('''ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'waiting' ''')
-
 cursor.execute('''CREATE TABLE IF NOT EXISTS rooms (
     id INTEGER PRIMARY KEY,
     floor INTEGER,
@@ -17,20 +15,7 @@ cursor.execute('''CREATE TABLE IF NOT EXISTS rooms (
     available_beds INTEGER
 )''')
 
-cursor.execute('''CREATE TABLE IF NOT EXISTS assignments (
-    patient_id INTEGER,
-    room_id INTEGER,
-    bed INTEGER,
-    FOREIGN KEY(patient_id) REFERENCES users(uid),
-    FOREIGN KEY(room_id) REFERENCES rooms(id)
-)''')
-
 # Mock data
-cursor.executemany('INSERT OR IGNORE INTO users (uid, username, status) VALUES (?, ?, ?)',
-                   [(1, 'Alice', 'waiting'),
-                    (2, 'Bob', 'waiting'),
-                    (3, 'Charlie', 'waiting')])
-
 cursor.executemany('INSERT OR IGNORE INTO rooms (id, floor, room_number, beds, available_beds) VALUES (?, ?, ?, ?, ?)',
                    [(1, 1, 101, 2, 2),
                     (2, 1, 102, 1, 1),
@@ -46,8 +31,6 @@ class HIMSApp:
         self.selected_patient = None
         self.selected_room = None
 
-        self.selected_patient = None
-        self.selected_room = None
         # Configure styles
         style = ttk.Style()
         style.theme_use("clam")
@@ -65,16 +48,8 @@ class HIMSApp:
                         background="#4CAF50",
                         foreground="white")
 
-        style.configure("TLabelFrame",
-                        background="#F3F3F3",
-                        font=("Helvetica", 10, "bold"))
-
-        style.configure("TButton",
-                        font=("Helvetica", 10),
-                        padding=5)
-
         # Frame for patient management
-        patient_frame = ttk.LabelFrame(root, text="Patient Management")
+        patient_frame = ttk.LabelFrame(parent, text="Patient Management")
         patient_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
         self.patient_list = ttk.Treeview(patient_frame, columns=("ID", "Name", "Status", "Room Number", "Bed"),
@@ -93,7 +68,7 @@ class HIMSApp:
         self.patient_list.bind("<<TreeviewSelect>>", self.select_patient)
 
         # Room management
-        room_frame = ttk.LabelFrame(root, text="Room Management")
+        room_frame = ttk.LabelFrame(parent, text="Room Management")
         room_frame.pack(fill="x", expand=True, padx=10, pady=10)
 
         ttk.Label(room_frame, text="Floor:").grid(row=0, column=0, padx=5, pady=5)
@@ -117,7 +92,7 @@ class HIMSApp:
         self.room_list.bind("<<TreeviewSelect>>", self.select_room)
 
         # Buttons
-        button_frame = ttk.Frame(root)
+        button_frame = ttk.Frame(parent)
         button_frame.pack(fill="x", padx=10, pady=10)
 
         ttk.Button(button_frame, text="Assign Room", command=self.assign_room).pack(side="left", padx=5)
@@ -130,25 +105,30 @@ class HIMSApp:
         for row in self.patient_list.get_children():
             self.patient_list.delete(row)
         patients = cursor.execute('''
-            SELECT users.uid, users.username, users.status,
-                   COALESCE(rooms.room_number, 'N/A') AS room_number,
-                   COALESCE(assignments.bed, 'N/A') AS bed
-            FROM users
-            LEFT JOIN assignments ON users.uid = assignments.patient_id
-            LEFT JOIN rooms ON assignments.room_id = rooms.id
+            SELECT pid, name, status, room_number, COALESCE(bed, 'N/A') AS bed
+            FROM patients
         ''').fetchall()
-        # Insert data with alternating row colors
         for index, patient in enumerate(patients):
             tag = 'oddrow' if index % 2 == 0 else 'evenrow'
             self.patient_list.insert("", "end", values=patient, tags=(tag,))
 
-        # Configure row styles
         self.patient_list.tag_configure('oddrow', background="#f0f8ff")
         self.patient_list.tag_configure('evenrow', background="#e6e6fa")
 
     def load_floors(self):
         floors = cursor.execute("SELECT DISTINCT floor FROM rooms").fetchall()
-        self.floor_select["values"] = [floor[0] for floor in floors]
+        floor_values = [floor[0] for floor in floors]
+
+        # If no floors exist in the database, set the default floor to 1
+        if floor_values:
+            self.floor_select["values"] = floor_values
+            self.floor_var.set(floor_values[0])  # Set the first floor as default
+        else:
+            self.floor_select["values"] = [1]
+            self.floor_var.set(1)  # Set default floor to 1
+
+        # Trigger room loading for the initial floor
+        self.load_rooms()
 
     def load_rooms(self, event=None):
         for row in self.room_list.get_children():
@@ -156,12 +136,10 @@ class HIMSApp:
         selected_floor = self.floor_var.get()
         rooms = cursor.execute("SELECT id, room_number, beds, available_beds FROM rooms WHERE floor = ?",
                                (selected_floor,)).fetchall()
-        # Insert data with alternating row colors
         for index, room in enumerate(rooms):
             tag = 'oddrow' if index % 2 == 0 else 'evenrow'
             self.room_list.insert("", "end", values=room, tags=(tag,))
 
-        # Configure row styles
         self.room_list.tag_configure('oddrow', background="#f0f8ff")
         self.room_list.tag_configure('evenrow', background="#e6e6fa")
 
@@ -188,9 +166,8 @@ class HIMSApp:
             messagebox.showerror("Error", "No available beds in the selected room.")
             return
         cursor.execute("UPDATE rooms SET available_beds = available_beds - 1 WHERE id = ?", (room_id,))
-        cursor.execute("INSERT INTO assignments (patient_id, room_id, bed) VALUES (?, ?, ?)",
-                       (patient_id, room_id, beds - available_beds + 1))
-        cursor.execute("UPDATE users SET status = 'admitted' WHERE uid = ?", (patient_id,))
+        cursor.execute("UPDATE patients SET status = 'admitted', room_number = ?, bed = ? WHERE pid = ?",
+                       (self.selected_room[1], beds - available_beds + 1, patient_id))
         conn.commit()
         self.load_patients()
         self.load_rooms()
@@ -200,15 +177,13 @@ class HIMSApp:
         if not self.selected_patient:
             messagebox.showerror("Error", "Select a patient.")
             return
-        patient_id, name, status, _, _ = self.selected_patient
+        patient_id, name, status, room_number, bed = self.selected_patient
         if status != "admitted":
             messagebox.showerror("Error", f"Patient {name} is not admitted.")
             return
-        room_id, bed = cursor.execute("SELECT room_id, bed FROM assignments WHERE patient_id = ?",
-                                      (patient_id,)).fetchone()
-        cursor.execute("DELETE FROM assignments WHERE patient_id = ?", (patient_id,))
-        cursor.execute("UPDATE users SET status = 'waiting' WHERE uid = ?", (patient_id,))
-        cursor.execute("UPDATE rooms SET available_beds = available_beds + 1 WHERE id = ?", (room_id,))
+        cursor.execute("UPDATE rooms SET available_beds = available_beds + 1 WHERE room_number = ?", (room_number,))
+        cursor.execute("UPDATE patients SET status = 'waiting', room_number = 'N/A', bed = NULL WHERE pid = ?",
+                       (patient_id,))
         conn.commit()
         self.load_patients()
         self.load_rooms()

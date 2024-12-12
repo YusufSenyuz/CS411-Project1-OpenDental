@@ -164,7 +164,6 @@ def open_dashboard(user):
         tree.configure(yscrollcommand=scrollbar.set)
         scrollbar.pack(side=RIGHT, fill=Y)
 
-    # GUI for All Patients
     def show_all_patients():
         """Function to display all patients."""
         conn = sqlite3.connect('open_dental_users.db')
@@ -172,9 +171,9 @@ def open_dashboard(user):
 
         try:
             cursor.execute("""
-                   SELECT p.pid, p.name, p.age, p.assigned_doctor, p.room_number
-                   FROM patients p
-               """)
+                SELECT p.pid, p.name, p.age, p.status, p.room_number
+                FROM patients p
+            """)
             patients = cursor.fetchall()
             print(f"Debug: Found patients: {patients}")
         except Exception as e:
@@ -196,7 +195,7 @@ def open_dashboard(user):
         # Treeview for displaying patients
         tree = Treeview(
             patients_window,
-            columns=("ID", "Name", "Age", "Assigned Doctor", "Room Number"),
+            columns=("ID", "Name", "Age", "Status", "Room Number"),
             show="headings",
             height=15
         )
@@ -205,7 +204,7 @@ def open_dashboard(user):
         tree.heading("ID", text="ID")
         tree.heading("Name", text="Name")
         tree.heading("Age", text="Age")
-        tree.heading("Assigned Doctor", text="Assigned Doctor")
+        tree.heading("Status", text="Status")
         tree.heading("Room Number", text="Room Number")
 
         tree.tag_configure("oddrow", background="#f0f8ff")
@@ -224,6 +223,136 @@ def open_dashboard(user):
         tree.configure(yscrollcommand=scrollbar.set)
         scrollbar.pack(side=RIGHT, fill=Y)
 
+        # Handle double-click event
+        def on_patient_double_click(event):
+            selected_item = tree.selection()
+            if not selected_item:
+                return
+
+            # Fetch patient details
+            patient = tree.item(selected_item)["values"]
+            patient_id = patient[0]
+            patient_name = patient[1]
+            patient_status = patient[3]
+
+            if patient_status == "waiting":
+                # Open room assignment dialog
+                assign_room_dialog(patient_id, patient_name)
+            elif patient_status == "admitted":
+                # Ask to discharge the patient
+                discharge_patient_dialog(patient_id, patient_name)
+
+        tree.bind("<Double-1>", on_patient_double_click)
+
+        patients_window.mainloop()
+
+    def discharge_patient_dialog(patient_id, patient_name):
+        """Ask if the patient should be discharged."""
+        response = messagebox.askyesno(
+            "Discharge Patient",
+            f"Do you want to discharge {patient_name}?"
+        )
+
+        if response:  # If user clicks "Yes"
+            conn = sqlite3.connect('open_dental_users.db')
+            cursor = conn.cursor()
+
+            try:
+                # Fetch the current room number for the patient
+                cursor.execute("SELECT room_number FROM patients WHERE pid = ?", (patient_id,))
+                room_number = cursor.fetchone()[0]
+
+                # Update the database to discharge the patient
+                if room_number:
+                    cursor.execute("UPDATE rooms SET available_beds = available_beds + 1 WHERE room_number = ?",
+                                   (room_number,))
+                cursor.execute("UPDATE patients SET status = 'waiting', room_number = NULL, bed = NULL WHERE pid = ?",
+                               (patient_id,))
+                conn.commit()
+                messagebox.showinfo("Success", f"{patient_name} has been discharged.")
+            except Exception as e:
+                print(f"Error discharging patient: {e}")
+                messagebox.showerror("Error", f"Could not discharge {patient_name}: {e}")
+            finally:
+                conn.close()
+
+    def assign_room_dialog(patient_id, patient_name):
+        """Dialog to assign a room to a patient."""
+        conn = sqlite3.connect('open_dental_users.db')
+        cursor = conn.cursor()
+
+        # Fetch available rooms
+        cursor.execute("SELECT id, floor, room_number, beds, available_beds FROM rooms WHERE available_beds > 0")
+        rooms = cursor.fetchall()
+
+        if not rooms:
+            messagebox.showinfo("No Rooms Available", "There are no rooms with available beds.")
+            return
+
+        # Create the dialog window
+        dialog = Toplevel()
+        dialog.title(f"Assign Room to {patient_name}")
+        dialog.geometry("600x400")
+
+        Label(dialog, text=f"Assign Room to {patient_name}", font=("Arial", 16), pady=10).pack()
+
+        # Treeview for displaying rooms
+        room_tree = Treeview(
+            dialog,
+            columns=("Room ID", "Floor", "Room Number", "Beds", "Available Beds"),
+            show="headings",
+            height=15
+        )
+        room_tree.pack(fill=BOTH, expand=True, pady=10)
+
+        room_tree.heading("Room ID", text="Room ID")
+        room_tree.heading("Floor", text="Floor")
+        room_tree.heading("Room Number", text="Room Number")
+        room_tree.heading("Beds", text="Beds")
+        room_tree.heading("Available Beds", text="Available Beds")
+
+        room_tree.tag_configure("oddrow", background="#f0f8ff")
+        room_tree.tag_configure("evenrow", background="#e6e6fa")
+
+        # Populate the table
+        for index, room in enumerate(rooms):
+            tag = "oddrow" if index % 2 == 0 else "evenrow"
+            room_tree.insert("", END, values=room, tags=(tag,))
+
+        # Scrollbar for Treeview
+        scrollbar = Scrollbar(dialog, orient=VERTICAL, command=room_tree.yview)
+        room_tree.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side=RIGHT, fill=Y)
+
+        # Assign room to the patient
+        def assign_room():
+            selected_item = room_tree.selection()
+            if not selected_item:
+                messagebox.showwarning("No Selection", "Please select a room.")
+                return
+
+            # Fetch selected room details
+            room = room_tree.item(selected_item)["values"]
+            room_id = room[0]
+            room_number = room[2]
+
+            try:
+                # Update the database
+                cursor.execute("UPDATE rooms SET available_beds = available_beds - 1 WHERE id = ?", (room_id,))
+                cursor.execute("UPDATE patients SET room_number = ?, status = 'admitted' WHERE pid = ?",
+                               (room_number, patient_id))
+                conn.commit()
+                messagebox.showinfo("Success", f"{patient_name} has been assigned to Room {room_number}.")
+                dialog.destroy()
+            except Exception as e:
+                print(f"Error assigning room: {e}")
+                messagebox.showerror("Error", f"Could not assign room: {e}")
+            finally:
+                conn.close()
+
+        Button(dialog, text="Assign Room", command=assign_room).pack(pady=10)
+
+        dialog.mainloop()
 
     # Update Buttons in the personnel_dashboard function
     Button(menu_frame, text="Home", font=("Arial", 12), bg="#4CAF50", command=lambda: show_page("Home")).pack(side=LEFT,
