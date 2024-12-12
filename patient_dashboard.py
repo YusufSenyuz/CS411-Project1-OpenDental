@@ -2,6 +2,8 @@ import sqlite3
 from tkinter import *
 from tkinter import messagebox
 from PIL import Image, ImageTk
+import subprocess
+
 
 def open_dashboard(user, parent=None):
     print(f"Debug: User passed to open_dashboard: {user}")
@@ -53,9 +55,19 @@ def open_dashboard(user, parent=None):
     Label(info_frame, text=f"Assigned Doctor: {assigned_doctor}", font=("Arial", 14), bg="white").pack(anchor=W, pady=5)
     Label(info_frame, text=f"Room Number: {room_number}", font=("Arial", 14), bg="white").pack(anchor=W, pady=5)
 
+    def open_login_page():
+        try:
+            subprocess.Popen(["python", "login.py"])
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not open login.py: {e}")
+    def terminate_session():
+        """Terminate the session and show the login page."""
+        dashboard.withdraw()  # Hide the current window
+        open_login_page()  # Open the login page
+
     # Footer Section
     footer = Frame(dashboard, bg="#f0f4f8", height=50)
     footer.pack(fill=X, side=BOTTOM, pady=10)
-    Button(footer, text="Close", font=("Arial", 12), bg="#dc3545", fg="black", width=15, command=dashboard.destroy).pack(pady=10)
+    Button(footer, text="Log Out", font=("Arial", 12), bg="#dc3545", fg="black", width=15, command=terminate_session).pack(pady=10)
 
     # No `mainloop()` for Toplevel windows
