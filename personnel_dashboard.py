@@ -36,7 +36,8 @@ def personnel_dashboard(user):
 
         name, age, gender, email, role, hospital_name = personnel_data
 
-        # Fetch assigned patients
+        start_time = time.time()
+
         cursor.execute("""
             SELECT p.pid, p.name, p.age, p.gender, p.room_number
             FROM patients p
@@ -44,6 +45,10 @@ def personnel_dashboard(user):
             WHERE pa.personnel_pid = ?
         """, (personnel_uid,))
         assigned_patients = cursor.fetchall()
+
+        duration = time.time() - start_time
+        print(f"Time taken to fetch assigned patients: {duration:.2f} seconds")
+
         print(f"Debug: Found assigned patients: {assigned_patients}")
 
     except Exception as e:
@@ -244,11 +249,16 @@ def personnel_dashboard(user):
         try:
             conn = sqlite3.connect('open_dental_users.db')
             cursor = conn.cursor()
+            start_time = time.time()
+
             cursor.execute("""
                 INSERT INTO patients (name, age, gender, race, education_level, email, assigned_doctor)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             """, (name, int(age), gender, race, education_level, email, doctor_assigned))
             conn.commit()
+
+            duration = time.time() - start_time
+            print(f"Time taken to add new patient: {duration:.2f} seconds")
             messagebox.showinfo("Success", "Patient added successfully!")
 
             duration = time.time() - start_time
@@ -352,10 +362,9 @@ def personnel_dashboard(user):
 
     def terminate_session():
         """Terminate the session and show the login page."""
-        dashboard.destroy()  # Hide the current window
-        open_login_page()  # Open the login page
+        dashboard.destroy()
+        open_login_page()
 
-    # Log Out Button
     footer = Frame(dashboard, bg="#f0f4f8", height=50)
     footer.pack(fill=X, side=BOTTOM, pady=10)
     Button(footer, text="Log Out", font=("Arial", 12), bg="#dc3545", fg="black", width=15, command=terminate_session).pack(pady=10)

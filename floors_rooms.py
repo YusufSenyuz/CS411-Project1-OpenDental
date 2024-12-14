@@ -1,12 +1,11 @@
 import sqlite3
+import time
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-# Database setup
 conn = sqlite3.connect('open_dental_users.db')
 cursor = conn.cursor()
 
-# Tables
 cursor.execute('''CREATE TABLE IF NOT EXISTS rooms (
     id INTEGER PRIMARY KEY,
     floor INTEGER,
@@ -22,7 +21,6 @@ cursor.executemany('INSERT OR IGNORE INTO rooms (id, floor, room_number, beds, a
                     (3, 2, 201, 2, 2)])
 
 conn.commit()
-
 
 # Tkinter Application
 class HIMSApp:
@@ -165,10 +163,16 @@ class HIMSApp:
         if available_beds == 0:
             messagebox.showerror("Error", "No available beds in the selected room.")
             return
+        start_time = time.time()
+
+        # Update the room and patient tables
         cursor.execute("UPDATE rooms SET available_beds = available_beds - 1 WHERE id = ?", (room_id,))
-        cursor.execute("UPDATE patients SET status = 'admitted', room_number = ?, bed = ? WHERE pid = ?",
-                       (self.selected_room[1], beds - available_beds + 1, patient_id))
+        cursor.execute("UPDATE patients SET room_number = ?, status = 'admitted' WHERE pid = ?",
+                       (self.selected_room[1], patient_id))
         conn.commit()
+
+        duration = time.time() - start_time
+        print(f"Time taken to assign room: {duration:.2f} seconds")
         self.load_patients()
         self.load_rooms()
         messagebox.showinfo("Success", f"Patient {name} assigned to Room {self.selected_room[1]}.")
@@ -189,8 +193,6 @@ class HIMSApp:
         self.load_rooms()
         messagebox.showinfo("Success", f"Patient {name} discharged.")
 
-
-# Main application
 root = tk.Tk()
 app = HIMSApp(root)
 root.mainloop()
