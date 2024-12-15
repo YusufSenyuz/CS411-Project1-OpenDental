@@ -45,6 +45,7 @@ The application allows users to:
 * manager_dashboard.py - Displays hospital statistics and manages data.
 * floors_rooms.py - Manages room assignments.
 * open_dental_users.db - SQLite database for user, patient, and room data.
+* Our test codes that measure the performance of the application such as login and transaction time is in the files. We used time library for test
 
 ---
 
