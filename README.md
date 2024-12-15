@@ -19,7 +19,17 @@ The application allows users to:
 - Required libraries:  
    ```bash
    pip install tk Pillow matplotlib
-
+- Important node, if your system supports python3, use python3 in the code blocks
+  ```bash
+  subprocess.Popen(["python3", "floors_rooms.py"])
+    ```bash
+  subprocess.Popen(["python3", "login.py"])
+- Otherwise if your system supports python, use python in the code blocks
+  ```bash
+  subprocess.Popen(["python", "floors_rooms.py"])
+    ```bash
+  subprocess.Popen(["python", "login.py"])
+- If you encounter a problem about this python compatibility issue, you can contact with our team members. 
 ---
 
 ## **Run the Application** 
