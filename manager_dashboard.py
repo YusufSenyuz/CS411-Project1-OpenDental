@@ -333,16 +333,21 @@ def open_dashboard(user):
 
             # Fetch selected room details
             room = room_tree.item(selected_item)["values"]
-            room_id = room[0]
-            room_number = room[2]
+            room_id, _, room_number, beds, available_beds = room
+
+            # Calculate the assigned bed number
+            assigned_bed = beds - available_beds + 1
 
             try:
                 # Update the database
                 cursor.execute("UPDATE rooms SET available_beds = available_beds - 1 WHERE id = ?", (room_id,))
-                cursor.execute("UPDATE patients SET room_number = ?, status = 'admitted' WHERE pid = ?",
-                               (room_number, patient_id))
+                cursor.execute("""
+                    UPDATE patients 
+                    SET room_number = ?, bed = ?, status = 'admitted' 
+                    WHERE pid = ?
+                """, (room_number, assigned_bed, patient_id))
                 conn.commit()
-                messagebox.showinfo("Success", f"{patient_name} has been assigned to Room {room_number}.")
+                messagebox.showinfo("Success", f"{patient_name} has been assigned to Room {room_number}, Bed {assigned_bed}.")
                 dialog.destroy()
             except Exception as e:
                 print(f"Error assigning room: {e}")
