@@ -19,14 +19,19 @@ def send_2fa_code(user_email):
 
     msg = MIMEText(f"Your 2FA verification code is: {verification_code}")
     msg['Subject'] = 'Open Dental 2FA Verification'
-    msg['From'] = 'eylulbadem36@gmail.com'  # Replace with your email
+    msg['From'] = 'eylulbadem36@gmail.com'
     msg['To'] = user_email
 
     try:
         with smtplib.SMTP('smtp.gmail.com', 587) as server:
             server.starttls()
-            server.login('eylulbadem36@gmail.com', 'lwlu togf bdrk vvzs')  # Replace with email credentials
+            server.login('eylulbadem36@gmail.com', 'lwlu togf bdrk vvzs')
+            start_time = time.time()
+
             server.sendmail('eylulbadem36@gmail.com', user_email, msg.as_string())
+
+            duration = time.time() - start_time
+            print(f"Time taken to send 2FA email: {duration:.2f} seconds")
             messagebox.showinfo("2FA Code", "A 2FA code has been sent to your email.")
     except Exception as e:
         messagebox.showerror("Email Error", f"Failed to send 2FA code. {str(e)}")
@@ -46,15 +51,14 @@ def check_2fa_code(user):
         print(f"Debug: Redirecting user to role-specific dashboard: {user_role}")
 
         if user_role == 'Personnel':
-            # Redirect personnel to their specific dashboard
             from personnel_dashboard import personnel_dashboard
-            personnel_dashboard(user)  # Correct function call
+            personnel_dashboard(user)
         elif user_role == 'Patient':
             from patient_dashboard import open_dashboard
-            open_dashboard(user)  # Correct function call
+            open_dashboard(user)
         elif user_role == 'Manager':
             from manager_dashboard import open_dashboard
-            open_dashboard(user)  # Correct function call
+            open_dashboard(user)
         else:
             print("Unknown role. Contact admin.")
     else:
@@ -69,7 +73,6 @@ def enable_resend_button():
             countdown_time -= 1
         resend_button.config(state=NORMAL, text="Resend Code")
     except TclError:
-        # Gracefully handle the case where the window or button is destroyed
         print("Resend button was destroyed; thread exiting.")
 
 def open_2fa_page(user):

@@ -1,5 +1,6 @@
 import sqlite3
 import subprocess
+import time
 from tkinter import *
 from tkinter.ttk import Treeview, Style
 from tkinter import messagebox
@@ -16,16 +17,14 @@ def open_dashboard(user):
     manager_uid = user['uid']
     print(f"Debug: Manager UID is {manager_uid}")
 
-    # Hardcoded hospital details for single-hospital system
     hospital_name = "Central Hospital"
     hospital_address = "123 Main St, Cityville"
 
-    # Connect to the database
     conn = sqlite3.connect('open_dental_users.db')
     cursor = conn.cursor()
 
     try:
-        # Fetch statistics
+        start_time = time.time()
         cursor.execute("SELECT COUNT(*) FROM patients")
         total_patients = cursor.fetchone()[0]
 
@@ -46,6 +45,8 @@ def open_dashboard(user):
 
         cursor.execute("SELECT education_level, COUNT(*) FROM patients GROUP BY education_level")
         education_level_distribution = cursor.fetchall()
+        duration = time.time() - start_time
+        print(f"Time taken to fetch hospital statistics: {duration:.2f} seconds")
 
     except Exception as e:
         print(f"Error fetching statistics data: {e}")
@@ -54,14 +55,11 @@ def open_dashboard(user):
     finally:
         conn.close()
 
-    # Create the Manager Dashboard window
     dashboard = Tk()
     dashboard.title(f"{hospital_name} - Manager Dashboard")
     dashboard.geometry("900x700")
     dashboard.configure(bg="#f0f4f8")
 
-
-    # Define a function to switch pages
     def show_page(page_name):
         for frame in pages.values():
             frame.pack_forget()
@@ -69,24 +67,20 @@ def open_dashboard(user):
 
     def open_login_page():
         try:
-            subprocess.Popen(["python", "login.py"])
+            subprocess.Popen(["python3", "login.py"])
         except Exception as e:
             messagebox.showerror("Error", f"Could not open login.py: {e}")
 
-        # Define a function to open floors_rooms.py
     def open_floors_rooms():
         try:
-            subprocess.Popen(["python", "floors_rooms.py"])
+            subprocess.Popen(["python3", "floors_rooms.py"])
         except Exception as e:
             messagebox.showerror("Error", f"Could not open floors_rooms.py: {e}")
 
-    # Header Section
     header = Frame(dashboard, bg="#4CAF50", height=80)
     header.pack(fill=X)
     Label(header, text=f"Manager Dashboard - {hospital_name}", font=("Arial", 20), bg="#4CAF50", fg="white").pack()
 
-    # Hospital Info Section
-    # Buttons Section
     menu_frame = Frame(dashboard, bg="white", padx=10, pady=10)
     menu_frame.pack(fill=X, pady=10)
     # implement the show all doctors button
@@ -367,7 +361,6 @@ def open_dashboard(user):
                                                                                                             padx=10)
     Button(menu_frame, text="All Patients", font=("Arial", 12), bg="#6AA84F", command=show_all_patients).pack(side=LEFT,
                                                                                                               padx=10)
-
 
     Button(menu_frame, text="All Rooms", font=("Arial", 12), bg="#6AA84F", command=open_floors_rooms).pack(
         side=LEFT, padx=10)

@@ -13,12 +13,11 @@ def open_dashboard(user, parent=None):
     conn = sqlite3.connect('open_dental_users.db')
     cursor = conn.cursor()
     try:
-        # Query to find the patient's data based on pid
         cursor.execute("""
             SELECT name, age, gender, email, assigned_doctor, room_number
             FROM patients
             WHERE pid = ?
-        """, (user['uid'],))  # Use the uid as the patient's pid
+        """, (user['uid'],))
         patient_data = cursor.fetchone()
 
         if not patient_data:
@@ -29,22 +28,18 @@ def open_dashboard(user, parent=None):
     finally:
         conn.close()
 
-    # Unpack and display the patient data
     patient_name, age, gender, email, assigned_doctor, room_number = patient_data
 
-    # Create the main window for the patient dashboard
-    dashboard = Toplevel(parent)  # Link this Toplevel window to its parent
+    dashboard = Toplevel(parent)
     dashboard.title("Patient Dashboard")
     dashboard.geometry("600x800")
     dashboard.configure(bg="#f0f4f8")
     dashboard.resizable(False, False)
 
-    # Header Section
     header = Frame(dashboard, bg="#4CAF50", height=80)
     header.pack(fill=X)
     Label(header, text="Patient Profile", font=("Arial", 24, "bold"), bg="#4CAF50", fg="white").pack(pady=20)
 
-    # Patient Information Section
     info_frame = Frame(dashboard, bg="white", padx=20, pady=10)
     info_frame.pack(pady=10, fill=X)
 
@@ -57,17 +52,14 @@ def open_dashboard(user, parent=None):
 
     def open_login_page():
         try:
-            subprocess.Popen(["python", "login.py"])
+            subprocess.Popen(["python3", "login.py"])
         except Exception as e:
             messagebox.showerror("Error", f"Could not open login.py: {e}")
     def terminate_session():
         """Terminate the session and show the login page."""
-        dashboard.withdraw()  # Hide the current window
-        open_login_page()  # Open the login page
+        dashboard.withdraw()
+        open_login_page()
 
-    # Footer Section
     footer = Frame(dashboard, bg="#f0f4f8", height=50)
     footer.pack(fill=X, side=BOTTOM, pady=10)
     Button(footer, text="Log Out", font=("Arial", 12), bg="#dc3545", fg="black", width=15, command=terminate_session).pack(pady=10)
-
-    # No `mainloop()` for Toplevel windows
